@@ -90,8 +90,9 @@ class ProductManager {
 }
 
 const test = async () => {
-  const ProductManager = new ProductManager("./products.json");
-  await ProductManager.addProduct({
+  const productManagerInstance = new ProductManager("./products.json");
+
+  await productManagerInstance.addProduct({
     title: "Notebook Asus",
     description: "I3 Inside",
     code: 3200,
@@ -100,7 +101,7 @@ const test = async () => {
     price: 1000,
   });
 
-  await ProductManager.addProduct({
+  await productManagerInstance.addProduct({
     title: "Notebook Dell",
     description: "I5 Inside",
     code: 3800,
@@ -109,7 +110,7 @@ const test = async () => {
     price: 3000,
   });
 
-  await ProductManager.addProduct({
+  await productManagerInstance.addProduct({
     title: "Notebook Bangho",
     description: "I7 Inside",
     code: 10000,
@@ -118,15 +119,17 @@ const test = async () => {
     price: 2000,
   });
 
-  const product2 = await ProductManager.getProductById(2);
+  const product2 = await productManagerInstance.getProductById(2);
   console.log(product2);
 
-  await ProductManager.updateProduct(4, { title: "Samsung s22" });
+  /*
+  await productManagerInstance.updateProduct(4, { title: "Samsung s22" }); // Se actualiza el titulo 
 
-  await ProductManager.deleteProduct(4);
+ 
+  await productManagerInstance.deleteProduct(4); // Eliminar el producto con el id:4
+  */
 };
 
 test();
-
 
 module.exports = ProductManager;
