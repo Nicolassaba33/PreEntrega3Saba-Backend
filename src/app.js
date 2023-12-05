@@ -1,58 +1,40 @@
-const express = require("express");
-const ProductManager = require("./ProductManager");
+const express = require('express');
+const ProductManager = require('./ProductManager');
 
 const app = express();
-const productManager = new ProductManager("./data/products.json");
+const port = 8080;
+
+const productManager = new ProductManager('./products.json');
 
 app.use(express.json());
 
-app.get("/products", (req, res) => {
-  const limit = req.query.limit;
-  let products = productManager.getProducts();
 
-  if (limit) {
-    products = products.slice(0, limit);
-  }
-
-  res.json({ products });
-});
-
-app.get("/products/:pid", (req, res) => {
-  const productId = req.params.pid;
-  const product = productManager.getProductById(productId);
-
-  if (product) {
-    res.json({ product });
-  } else {
-    res.status(404).json({ error: "Product not found" });
+app.get('/products', async (req, res) => {
+  try {
+    const limit = req.query.limit;
+    const products = limit ? (await productManager.getProducts()).slice(0, limit) : await productManager.getProducts();
+    res.json({ products });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener productos' });
   }
 });
 
-app.post("/products", (req, res) => {
-  const newProduct = req.body;
-  const addedProduct = productManager.addProduct(newProduct);
-  res.status(201).json({ product: addedProduct });
-});
 
-app.put("/products/:pid", (req, res) => {
-  const productId = req.params.pid;
-  const updatedFields = req.body;
-  const updatedProduct = productManager.updateProduct(productId, updatedFields);
+app.get('/products/:pid', async (req, res) => {
+  try {
+    const productId = parseInt(req.params.pid);
+    const product = await productManager.getProductById(productId);
 
-  if (updatedProduct) {
-    res.json({ product: updatedProduct });
-  } else {
-    res.status(404).json({ error: "Product not found" });
+    if (!product) {
+      res.status(404).json({ error: 'Producto no encontrado' });
+    } else {
+      res.json({ product });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener el producto' });
   }
 });
 
-app.delete("/products/:pid", (req, res) => {
-  const productId = req.params.pid;
-  productManager.deleteProduct(productId);
-  res.json({ message: "Product deleted successfully" });
-});
-
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`Servidor Express iniciado en http://localhost:${port}`);
 });

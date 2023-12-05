@@ -1,72 +1,132 @@
 const fs = require("fs");
 
 class ProductManager {
-  constructor(filePath) {
-    this.path = filePath;
+  constructor(path) {
+    this.path = path;
   }
 
-  addProduct(product) {
-    const products = this.getProducts();
+  static id = 0;
+
+  async getId() {
+    const products = await this.getProducts();
+    return products.length;
+  }
+
+  async addProduct(product) {
+    if (
+      !product.title ||
+      !product.description ||
+      !product.code ||
+      !product.price ||
+      !product.stock ||
+      !product.thumbnail
+    ) {
+      return console.error("Datos incompletos");
+    }
+    ProductManager.id++;
+    const products = await this.getProducts();
+    const id = await this.getId();
     const newProduct = {
-      id: this.generateUniqueId(products),
-      ...product,
+      title: product.title,
+      description: product.description,
+      code: product.code,
+      stock: product.stock,
+      thumbnail: product.thumbnail,
+      price: product.price,
+      id: id + 1,
     };
+
     products.push(newProduct);
-    this.saveProducts(products);
-    return newProduct;
+    await fs.promises.writeFile(this.path, JSON.stringify(products), "utf-8");
   }
 
-  getProducts() {
+  async getProducts() {
     try {
-      const data = fs.readFileSync(this.path, "utf8");
-      return JSON.parse(data);
+      const data = await fs.promises.readFile(this.path, "utf-8");
+      const products = JSON.parse(data.toString());
+      return products;
     } catch (error) {
       return [];
     }
   }
 
-  getProductById(productId) {
-    const products = this.getProducts();
-    return products.find((product) => product.id === productId);
-  }
-
-  updateProduct(productId, updatedFields) {
-    const products = this.getProducts();
-    const index = products.findIndex((product) => product.id === productId);
-
-    if (index !== -1) {
-      products[index] = {
-        ...products[index],
-        ...updatedFields,
-        id: productId,
-      };
-
-      this.saveProducts(products);
-      return products[index];
-    } else {
-      console.log("Producto no encontrado");
+  async getProductById(id) {
+    const products = await this.getProducts();
+    const product = products.find((p) => p.id === id);
+    if (!product) {
+      console.error("Producto no encontrado");
     }
+    return product;
   }
 
-  deleteProduct(productId) {
-    const products = this.getProducts();
-    const updatedProducts = products.filter(
-      (product) => product.id !== productId
+  async deleteProduct(id) {
+    const product = await this.getProducts();
+    const productsDeleted = product.filter((product) => product.id !== id);
+    await fs.promises.writeFile(
+      this.path,
+      JSON.stringify(productsDeleted),
+      "utf-8"
     );
-    this.saveProducts(updatedProducts);
   }
 
-  generateUniqueId(products) {
-    const maxId = products.reduce(
-      (max, product) => (product.id > max ? product.id : max),
-      0
+  async updateProduct(id, productToUpdate) {
+    const products = await this.getProducts();
+    const updatedProducts = products.map((product) => {
+      if (product.id === id) {
+        return {
+          ...product,
+          ...productToUpdate,
+          id,
+        };
+      }
+      return product;
+    });
+    await fs.promises.writeFile(
+      this.path,
+      JSON.stringify(updatedProducts),
+      "utf-8"
     );
-    return maxId + 1;
-  }
-
-  saveProducts(products) {
-    fs.writeFileSync(this.path, JSON.stringify(products, null, 2), "utf8");
   }
 }
+
+const test = async () => {
+  const ProductManager = new ProductManager("./products.json");
+  await ProductManager.addProduct({
+    title: "Notebook Asus",
+    description: "I3 Inside",
+    code: 3200,
+    stock: 3,
+    thumbnail: "./asus.jpg",
+    price: 1000,
+  });
+
+  await ProductManager.addProduct({
+    title: "Notebook Dell",
+    description: "I5 Inside",
+    code: 3800,
+    stock: 6,
+    thumbnail: "./dell.jpg",
+    price: 3000,
+  });
+
+  await ProductManager.addProduct({
+    title: "Notebook Bangho",
+    description: "I7 Inside",
+    code: 10000,
+    stock: 5,
+    thumbnail: "./bangho.jpg",
+    price: 2000,
+  });
+
+  const product2 = await ProductManager.getProductById(2);
+  console.log(product2);
+
+  await ProductManager.updateProduct(4, { title: "Samsung s22" });
+
+  await ProductManager.deleteProduct(4);
+};
+
+test();
+
 
 module.exports = ProductManager;
